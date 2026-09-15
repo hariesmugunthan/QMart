@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Close Customer</title>
+
+</head>
+
+
+<body>
+
+    <h1>Close Customer</h1>
+
+   <h3>Enter Customer ID</h3>
+
+<input
+    type="text"
+    id="customerId"
+    placeholder="Enter Customer ID"
+>
+
+<button onclick="checkCustomer()">
+    Check Customer
+</button>
+
+<br><br>
+
+<button onclick="startScanner()">
+    Scan QR
+</button>
+
+<br><br>
+
+<video
+    id="scanner"
+    width="300"
+    height="300"
+    style="display:none;"
+    autoplay
+>
+</video>
+
+
+    <div id="customerOptions" style="display:none;">
+
+        <br><br>
+
+        <button onclick="sendAllInvoice()">
+            Send All Invoice
+        </button>
+
+        <button onclick="closeCustomer()">
+            Close Customer
+        </button>
+
+    </div>
+
+
+    <p id="message"></p>
+
+
+    <script>
+
+        let customerId;
+let videoStream;
+let barcodeDetector;
+let scanning = false;
+
+
+        // CHECK CUSTOMER
+
+        async function checkCustomer() {
+
+            customerId =
+                document.getElementById(
+                    "customerId"
+                ).value;
+
+
+            if (!customerId) {
+
+                alert("Enter Customer ID");
+
+                return;
+            }
+
+
+            const response =
+                await fetch(
+                    `http://localhost:8080/customerexists/${customerId}`
+                );
+
+
+            const exists =
+                await response.json();
+
+
+            if (exists) {
+
+                document.getElementById(
+                    "message"
+                ).textContent =
+                    "Customer found";
+
+
+                document.getElementById(
+                    "customerOptions"
+                ).style.display = "block";
+
+            }
+
+            else {
+
+                document.getElementById(
+                    "message"
+                ).textContent =
+                    "Customer not found";
+
+
+                document.getElementById(
+                    "customerOptions"
+                ).style.display = "none";
+
+            }
+
+        }
+
+
+        // SEND ALL INVOICE
+
+       async function sendAllInvoice() {
+
+    const response =
+        await fetch(
+            `http://localhost:8080/sendallinvoice/${customerId}`,
+            {
+                method: "POST"
+            }
+        );
+
+
+    if (response.ok) {
+
+        alert(
+            "All invoice sent successfully!"
+        );
+
+    }
+
+    else {
+
+        alert(
+            "Failed to send invoice!"
+        );
+
+    }
+
+}
+
+
+        // CLOSE CUSTOMER
+
+        async function closeCustomer() {
+
+            const response =
+                await fetch(
+                    `http://localhost:8080/closecustomer/${customerId}`,
+                    {
+                        method: "DELETE"
+                    }
+                );
+
+
+            if (response.ok) {
+
+                alert(
+                    "Customer closed successfully"
+                );
+
+
+                document.getElementById(
+                    "customerId"
+                ).value = "";
+
+
+                document.getElementById(
+                    "customerOptions"
+                ).style.display = "none";
+
+
+                document.getElementById(
+                    "message"
+                ).textContent = "";
+
+            }
+
+            else {
+
+                alert(
+                    "Failed to close customer"
+                );
+
+            }
+
+        }
+        async function startScanner() {
+
+    if (!("BarcodeDetector" in window)) {
+
+        alert(
+            "QR scanner is not supported by this browser. Please enter the Customer ID manually."
+        );
+
+        return;
+    }
+
+
+    const supportedFormats =
+        await BarcodeDetector.getSupportedFormats();
+
+
+    if (!supportedFormats.includes("qr_code")) {
+
+        alert(
+            "QR scanning is not supported by this browser."
+        );
+
+        return;
+    }
+
+
+    barcodeDetector =
+        new BarcodeDetector({
+            formats: ["qr_code"]
+        });
+
+
+    const video =
+        document.getElementById("scanner");
+
+
+    try {
+
+        videoStream =
+            await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: "environment"
+                }
+            });
+
+
+        video.srcObject =
+            videoStream;
+
+
+        video.style.display =
+            "block";
+
+
+        scanning = true;
+
+
+        scanQRCode();
+
+    }
+
+    catch (error) {
+
+        console.log(error);
+
+        alert(
+            "Camera permission denied or camera not available."
+        );
+
+    }
+
+}
+async function scanQRCode() {
+
+    if (!scanning) {
+        return;
+    }
+
+
+    const video =
+        document.getElementById("scanner");
+
+
+    if (video.readyState === 4) {
+
+        try {
+
+            const codes =
+                await barcodeDetector.detect(video);
+
+
+            if (codes.length > 0) {
+
+                const value =
+                    codes[0].rawValue;
+
+
+                console.log(
+                    "QR value:",
+                    value
+                );
+
+
+                customerId = value;
+
+
+                document.getElementById(
+                    "customerId"
+                ).value = value;
+
+
+                stopScanner();
+
+
+                checkCustomer();
+
+                return;
+
+            }
+
+        }
+
+        catch (error) {
+
+            console.log(
+                "QR detection error:",
+                error
+            );
+
+        }
+
+    }
+
+
+    requestAnimationFrame(
+        scanQRCode
+    );
+
+}function stopScanner() {
+
+    scanning = false;
+
+
+    if (videoStream) {
+
+        videoStream
+            .getTracks()
+            .forEach(track => {
+                track.stop();
+            });
+
+    }
+
+
+    const video =
+        document.getElementById("scanner");
+
+
+    video.srcObject = null;
+
+    video.style.display = "none";
+
+}
+
+    </script>
+
+</body>
+
+</html>

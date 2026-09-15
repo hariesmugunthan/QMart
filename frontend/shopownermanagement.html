@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shop Owner Management</title>
+
+    <style>
+        #productBox {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+
+            width: 400px;
+            max-height: 500px;
+            overflow-y: auto;
+
+            padding: 25px;
+            background: white;
+
+            border: 1px solid black;
+            border-radius: 10px;
+
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Shop Owner Management</h1>
+
+    <select id="filter" onchange="filterOwners()">
+        <option value="all">All</option>
+        <option value="pending">Pending</option>
+    </select>
+
+    <br><br>
+
+    <div id="ownerList"></div>
+
+
+    <!-- Product Popup -->
+
+    <div id="productBox">
+
+        <h2>Products</h2>
+
+        <div id="productList"></div>
+
+        <button onclick="closeProductBox()">Close</button>
+
+    </div>
+
+
+    <script>
+
+        // Load all shop owners
+
+        async function loadAllOwners() {
+
+            const response = await fetch(
+                "http://localhost:8080/shopowners"
+            );
+
+            const owners = await response.json();
+
+            displayOwners(owners);
+        }
+
+
+        // Display owners
+
+        async function displayOwners(owners) {
+
+            const ownerList = document.getElementById("ownerList");
+
+            ownerList.innerHTML = "";
+
+            for (const owner of owners) {
+
+                const shopExists = await getShopStatus(owner.owner_id);
+
+                let shopButton;
+
+                if (shopExists) {
+
+                    shopButton = `
+                        <button disabled>
+                            Shop Exists
+                        </button>
+                    `;
+
+                }
+                else {
+
+                    shopButton = `
+                        <button onclick="addShop(${owner.owner_id})">
+                            Add Shop
+                        </button>
+                    `;
+
+                }
+
+                ownerList.innerHTML += `
+                    <div>
+
+                        <p>Owner ID: ${owner.owner_id}</p>
+
+                        <p>Name: ${owner.name}</p>
+
+                        <p>Email: ${owner.email}</p>
+
+                        <p>Phone: ${owner.phone}</p>
+
+                        <p>Status: ${owner.status}</p>
+
+                        <p>Created At: ${owner.created_at}</p>
+
+                        <button onclick="changeStatus(${owner.owner_id})">
+                            ${owner.status}
+                        </button>
+
+                        ${shopButton}
+
+                        <button onclick="viewProducts(${owner.owner_id})">
+                            View Products
+                        </button>
+
+                        <hr>
+
+                    </div>
+                `;
+
+            }
+        }
+
+
+        // Check whether shop exists
+
+        async function getShopStatus(ownerId) {
+
+            const response = await fetch(
+                `http://localhost:8080/shopstatus/${ownerId}`
+            );
+
+            return await response.json();
+        }
+
+
+        // Add shop
+
+        async function addShop(ownerId) {
+
+            const data = {
+
+                owner_id: {
+                    owner_id: ownerId
+                }
+
+            };
+
+            const response = await fetch(
+                "http://localhost:8080/createshop",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify(data)
+                }
+            );
+
+            const result = await response.text();
+
+            if (result === "added") {
+
+                alert("Shop added successfully");
+
+            }
+            else if (result === "shop exists") {
+
+                alert("Shop already exists");
+
+            }
+
+            // Reload the owners so button changes
+
+            filterOwners();
+        }
+
+
+        // Filter owners
+
+        async function filterOwners() {
+
+            const filter = document.getElementById("filter").value;
+
+            let url;
+
+            if (filter === "all") {
+
+                url = "http://localhost:8080/shopowners";
+
+            }
+            else if (filter === "pending") {
+
+                url = "http://localhost:8080/pendingshopowmers";
+
+            }
+
+            const response = await fetch(url);
+
+            const owners = await response.json();
+
+            displayOwners(owners);
+        }
+
+
+        // Change owner status
+
+        async function changeStatus(id) {
+
+            await fetch(
+                `http://localhost:8080/changestatus?id=${id}`,
+                {
+                    method: "POST"
+                }
+            );
+
+            filterOwners();
+        }
+
+
+        // View products of a shop owner
+
+        async function viewProducts(ownerId) {
+
+            const response = await fetch(
+                `http://localhost:8080/getproducts/${ownerId}`
+            );
+
+            const products = await response.json();
+
+            const productList = document.getElementById("productList");
+
+            productList.innerHTML = "";
+
+            products.forEach(product => {
+
+                productList.innerHTML += `
+                    <div>
+
+                        <p>Product Name: ${product.name}</p>
+
+                        <p>Price: ₹${product.price}</p>
+
+                        <p>Quantity: ${product.quantity}</p>
+
+                        <hr>
+
+                    </div>
+                `;
+
+            });
+
+            document.getElementById("productBox").style.display = "block";
+        }
+
+
+        // Close product popup
+
+        function closeProductBox() {
+
+            document.getElementById("productBox").style.display = "none";
+
+        }
+
+
+        // Load all owners when page opens
+
+        window.onload = loadAllOwners;
+
+    </script>
+
+</body>
+</html>

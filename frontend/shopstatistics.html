@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Shop Statistics</title>
+
+</head>
+
+
+<body>
+
+    <h1>Shop Statistics</h1>
+
+    <div id="shopList"></div>
+
+    <br>
+
+    <button onclick="resetStatistics()">
+        Reset to 0
+    </button>
+
+
+    <script>
+
+        async function loadStatistics() {
+
+            const response =
+                await fetch(
+                    "http://localhost:8080/shopstatistics"
+                );
+
+
+            if (!response.ok) {
+
+                alert("Failed to load statistics");
+
+                return;
+            }
+
+
+            const shops =
+                await response.json();
+
+
+            const shopList =
+                document.getElementById("shopList");
+
+
+            shopList.innerHTML = "";
+
+
+            shops.forEach(shop => {
+
+                const div =
+                    document.createElement("div");
+
+
+                div.innerHTML = `
+
+                    <h3>
+                        Shop ID: ${shop.sid}
+                    </h3>
+
+                    <p>
+                        Total Transaction:
+                        ₹${shop.totalTransaction}
+                    </p>
+
+                    <hr>
+
+                `;
+
+
+                shopList.appendChild(div);
+
+            });
+
+        }
+
+
+        async function resetStatistics() {
+
+            const response =
+                await fetch(
+                    "http://localhost:8080/resetstatistics",
+                    {
+                        method: "POST"
+                    }
+                );
+
+
+            if (response.ok) {
+
+                alert(
+                    "All shop transactions reset to 0"
+                );
+
+                loadStatistics();
+
+            }
+
+            else {
+
+                alert(
+                    "Failed to reset statistics"
+                );
+
+            }
+
+        }
+
+
+        loadStatistics();
+
+    </script>
+
+</body>
+
+</html>

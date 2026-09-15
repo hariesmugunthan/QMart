@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QMart - Manager</title>
+
+    <style>
+
+    #profile {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        text-align: center;
+    }
+
+    #profileIcon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: 2px solid black;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 25px;
+    }
+
+    #welcome {
+        margin-top: 5px;
+        font-size: 14px;
+    }
+
+    #profileBox {
+        display: none;
+
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+
+        width: 350px;
+        padding: 25px;
+
+        background: white;
+        border: 1px solid black;
+        border-radius: 10px;
+
+        box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    }
+
+    #customerPopup {
+        display: none;
+
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+
+        width: 350px;
+        padding: 25px;
+
+        background: white;
+        border: 1px solid black;
+        border-radius: 10px;
+
+        box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+
+        z-index: 10;
+    }
+
+</style>
+</head>
+
+<body>
+
+    <div id="profile" onclick="showProfile()">
+
+        <div id="profileIcon">👤</div>
+
+        <div id="welcome"></div>
+
+    </div>
+
+
+    <div id="customerPopup">
+
+        <h2>Register Customer</h2>
+
+        <input type="text" id="customerName" placeholder="Name">
+        <br><br>
+
+        <input type="email" id="customerMail" placeholder="Mail">
+        <br><br>
+
+        <button onclick="registerCustomer()">
+            Register and Send QR
+        </button>
+
+        <button onclick="closeCustomerPopup()">
+            Close
+        </button>
+
+        <div id="qrResult"></div>
+
+    </div>
+
+
+    <h1>Manager</h1>
+
+    <button onclick="openShopOwnerManagement()">
+        Shop Owner Management
+    </button>
+
+    <button onclick="openCustomerRegistration()">
+        Register Customer
+    </button>
+    <button onclick="openCloseCustomer()">
+    Close Customer
+</button>
+<button onclick="openShopStatistics()">
+    Shop Statistics
+</button>
+
+
+    <div id="profileBox">
+
+        <h2>Manager Profile</h2>
+
+        <p id="profileName"></p>
+        <p id="profileEmail"></p>
+        <p id="profilePhone"></p>
+        <p id="profileId"></p>
+        <p id="profileCreated"></p>
+
+        <button onclick="closeProfile()">
+            Close
+        </button>
+
+    </div>
+
+
+<script>
+
+    function openShopOwnerManagement() {
+
+        window.location.href = "shopownermanagement.html";
+
+    }
+
+
+    function showProfile() {
+
+        document.getElementById("profileBox").style.display = "block";
+
+    }
+
+
+    function closeProfile() {
+
+        document.getElementById("profileBox").style.display = "none";
+
+    }
+
+
+    async function loadManager() {
+
+        const managerId = localStorage.getItem("managerId");
+
+        const response = await fetch(
+            `http://localhost:8080/getmanager/${managerId}`
+        );
+
+        const manager = await response.json();
+
+
+        document.getElementById("welcome").innerText =
+            "WELCOME " + manager.name;
+
+
+        document.getElementById("profileName").innerText =
+            "Name: " + manager.name;
+
+
+        document.getElementById("profileEmail").innerText =
+            "Email: " + manager.email;
+
+
+        document.getElementById("profilePhone").innerText =
+            "Phone: " + manager.phone;
+
+
+        document.getElementById("profileId").innerText =
+            "Manager ID: " + manager.managerId;
+
+
+        document.getElementById("profileCreated").innerText =
+            "Created At: " + manager.created_at;
+
+    }
+
+
+    function openCustomerRegistration() {
+
+        document.getElementById("customerPopup").style.display = "block";
+
+    }
+
+
+    function closeCustomerPopup() {
+
+        document.getElementById("customerPopup").style.display = "none";
+
+    }
+
+
+    async function registerCustomer() {
+
+        const data = {
+
+            name: document.getElementById("customerName").value,
+
+            mail: document.getElementById("customerMail").value
+
+        };
+
+
+        const response = await fetch(
+            "http://localhost:8080/createnewcustomer",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify(data)
+            }
+        );
+
+
+        const result = await response.json();
+
+
+        document.getElementById("qrResult").innerHTML =
+
+            "<p>Customer ID: " +
+            result.customerId +
+            "</p>" +
+
+            "<p>QR sent successfully to " +
+            data.mail +
+            "</p>" +
+
+            "<img src='data:image/png;base64," +
+            result.qrCode +
+            "' width='300'>";
+
+    }
+    function openCloseCustomer() {
+
+    window.location.href =
+        "closecustomer.html";
+
+}
+function openShopStatistics() {
+
+    window.location.href =
+        "shopstatistics.html";
+
+}
+
+
+    window.onload = loadManager;
+
+</script>
+
+</body>
+</html>

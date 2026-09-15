@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>QMart</title>
+</head>
+
+<body>
+
+    <h1>QMart</h1>
+    <p>Smart Market Management System</p>
+
+    <h3>LOGIN AS</h3>
+
+   <button onclick="openManager()">Manager</button>
+
+   <button onclick="openShopOwner()">Shop Owner</button>
+   
+   <script>
+
+    function openManager() {
+        window.location.href = "auth.html?role=manager";
+    }
+
+    function openShopOwner() {
+        window.location.href = "auth.html?role=shopowner";
+    }
+
+</script>
+</body>
+
+</html>

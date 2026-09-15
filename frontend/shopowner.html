@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>QMart - Shop Owner</title>
+
+    <style>
+
+        #profile {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: center;
+        }
+
+        #profileIcon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 25px;
+        }
+
+        #welcome {
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        #profileBox {
+            display: none;
+
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+
+            width: 350px;
+            padding: 25px;
+
+            background: white;
+            border: 1px solid black;
+            border-radius: 10px;
+
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+
+            z-index: 20;
+        }
+
+        #approvalBox {
+            display: none;
+
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+
+            width: 350px;
+            padding: 25px;
+
+            background: white;
+            border: 1px solid black;
+            border-radius: 10px;
+
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+
+            text-align: center;
+
+            z-index: 10;
+        }
+
+    </style>
+</head>
+
+
+<body>
+
+    <!-- Profile -->
+    <div id="profile" onclick="showProfile()">
+
+        <div id="profileIcon">👤</div>
+
+        <div id="welcome"></div>
+
+    </div>
+
+
+    <h1>Shop Owner</h1>
+
+
+    <!-- Product Management -->
+    <button onclick="openProductManagement()">
+        Product Management
+    </button>
+    <br><br>
+
+<button onclick="openCustomerManagement()">
+    Customer Management
+</button>
+
+
+    <!-- Profile Popup -->
+    <div id="profileBox">
+
+        <h2>Shop Owner Profile</h2>
+
+        <p id="profileName"></p>
+
+        <p id="profileEmail"></p>
+
+        <p id="profilePhone"></p>
+
+        <p id="profileId"></p>
+
+        <p id="profileStatus"></p>
+
+        <p id="profileCreated"></p>
+
+        <button onclick="closeProfile()">
+            Close
+        </button>
+
+    </div>
+
+
+    <!-- Pending Popup -->
+    <div id="approvalBox">
+
+        <h2>Account Pending</h2>
+
+        <p>Status: PENDING</p>
+
+        <p>
+            Contact the Manager for approval.
+        </p>
+
+        <button onclick="closeApproval()">
+            Close
+        </button>
+
+    </div>
+
+
+    <script>
+
+        async function loadShopOwner() {
+
+            const ownerId = localStorage.getItem("ownerId");
+
+            const response = await fetch(
+                `http://localhost:8080/getshopowner/${ownerId}`
+            );
+
+            const owner = await response.json();
+
+
+            // Welcome message
+            document.getElementById("welcome").innerText =
+                "WELCOME " + owner.name;
+
+
+            // Pending status popup
+            if (owner.status === "PENDING") {
+
+                document.getElementById("approvalBox").style.display =
+                    "block";
+
+            }
+
+
+            // Profile details
+            document.getElementById("profileName").innerText =
+                "Name: " + owner.name;
+
+            document.getElementById("profileEmail").innerText =
+                "Email: " + owner.email;
+
+            document.getElementById("profilePhone").innerText =
+                "Phone: " + owner.phone;
+
+            document.getElementById("profileId").innerText =
+                "Owner ID: " + owner.owner_id;
+
+            document.getElementById("profileStatus").innerText =
+                "Status: " + owner.status;
+
+            document.getElementById("profileCreated").innerText =
+                "Created At: " + owner.created_at;
+
+        }
+
+
+        function showProfile() {
+
+            document.getElementById("profileBox").style.display =
+                "block";
+
+        }
+
+
+        function closeProfile() {
+
+            document.getElementById("profileBox").style.display =
+                "none";
+
+        }
+
+
+        function closeApproval() {
+
+            window.location.href =
+                "auth.html?role=shopowner";
+
+        }
+
+
+        function openProductManagement() {
+
+            window.location.href =
+                "productmanagement.html";
+
+        }
+        function openCustomerManagement() {
+    window.location.href = "customermanagement.html";
+}
+
+
+        window.onload = loadShopOwner;
+
+    </script>
+
+</body>
+
+</html>

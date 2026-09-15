@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Customer Management</title>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+
+<body>
+
+    <h1>Customer Management</h1>
+
+    <h3>Enter Customer ID</h3>
+    <h2>Products</h2>
+
+<div id="productList"></div>
+
+    <input type="number" id="customerId" placeholder="Customer ID">
+
+    <br><br>
+
+    <button onclick="continueCustomer()">Continue</button>
+
+    <button onclick="startScanner()">Scan QR</button>
+
+    <br><br>
+
+    <div id="reader" style="width:300px;"></div>
+
+    <script>
+async function continueCustomer() {
+
+    const customerId =
+        document.getElementById("customerId").value;
+
+    if (customerId === "") {
+        alert("Enter Customer ID");
+        return;
+    }
+
+    const response = await fetch(
+        `http://localhost:8080/customerexists/${customerId}`
+    );
+
+    const exists = await response.json();
+
+    if (!exists) {
+        alert("Customer not found!");
+        return;
+    }
+
+    alert("Customer found!");
+
+window.location.href =
+    "shopproducts.html?customerId=" + customerId;
+}
+
+        function startScanner() {
+
+            const scanner = new Html5Qrcode("reader");
+
+            scanner.start(
+                { facingMode: "environment" },
+
+                {
+                    fps: 10,
+                    qrbox: 250
+                },
+
+                function(decodedText) {
+
+                    // QR contains only Customer ID
+                    document.getElementById("customerId").value = decodedText;
+
+                    alert("Customer ID scanned: " + decodedText);
+
+                    scanner.stop();
+                },
+
+                function(errorMessage) {
+                    // Ignore scanning errors
+                }
+            );
+        }
+       async function loadProducts() {
+
+    alert("loadProducts started");
+
+    const ownerId = 6;
+
+    const response = await fetch(
+        `http://localhost:8080/getproducts/${ownerId}`
+    );
+
+    alert("Backend response received");
+
+    const products = await response.json();
+
+   alert("Products received: " + products.length);
+console.log(products);
+
+    const productList =
+        document.getElementById("productList");
+
+    productList.innerHTML = "";
+
+    products.forEach(product => {
+
+        const div = document.createElement("div");
+
+        let quantity = 0;
+
+        div.innerHTML = `
+            <h3>${product.name}</h3>
+            <p>Price: ₹${product.price}</p>
+
+            <button class="minus">-</button>
+            <span class="quantity">0</span>
+            <button class="plus">+</button>
+
+            <button class="cart">Add to Cart</button>
+
+            <hr>
+        `;
+
+        const minusButton = div.querySelector(".minus");
+        const plusButton = div.querySelector(".plus");
+        const quantityText = div.querySelector(".quantity");
+
+        plusButton.onclick = function() {
+            quantity++;
+            quantityText.textContent = quantity;
+        };
+
+        minusButton.onclick = function() {
+            if (quantity > 0) {
+                quantity--;
+            }
+
+            quantityText.textContent = quantity;
+        };
+
+        productList.appendChild(div);
+    });
+}
+
+    </script>
+
+</body>
+
+</html>

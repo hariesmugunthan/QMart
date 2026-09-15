@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+    <title>Shop Products</title>
+
+    <style>
+
+        #invoicePopup {
+
+            display: none;
+
+            position: fixed;
+
+            top: 50%;
+            left: 50%;
+
+            transform: translate(-50%, -50%);
+
+            background-color: white;
+
+            border: 2px solid black;
+
+            padding: 20px;
+
+            width: 350px;
+
+            box-shadow: 0 0 10px gray;
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <h1>Shop Products</h1>
+
+    <div id="productList"></div>
+
+    <hr>
+
+
+    <!-- CART -->
+
+    <h2>Cart</h2>
+
+    <div id="cartList"></div>
+
+    <h3 id="cartTotal">Total: ₹0</h3>
+
+    <button onclick="showInvoice()">
+        Place Order
+    </button>
+
+
+    <!-- INVOICE POPUP -->
+
+    <div id="invoicePopup">
+
+        <h2>Invoice</h2>
+
+        <div id="invoiceItems"></div>
+
+        <h3 id="invoiceTotal"></h3>
+
+        <button onclick="closeInvoice()">
+            Close
+        </button>
+
+        <button onclick="sendEmail()">
+            Send Email
+        </button>
+
+        <button onclick="placeOrder()">
+            Place Order
+        </button>
+
+    </div>
+
+
+    <script>
+
+        // GET LOGGED-IN OWNER ID
+
+        const ownerId =
+            localStorage.getItem("ownerId");
+
+
+        // SHOP ID WILL BE LOADED FROM BACKEND
+
+        let shopId;
+
+
+        // TEMPORARY CART
+
+        let cart = [];
+
+
+        // LOAD SHOP
+
+        async function loadShop() {
+
+            if (!ownerId) {
+
+                alert("Owner ID not found");
+
+                return;
+            }
+
+
+            const response = await fetch(
+                `http://localhost:8080/getshopbyowner/${ownerId}`
+            );
+
+
+            if (!response.ok) {
+
+                alert("Shop not found");
+
+                return;
+            }
+
+
+            const shop = await response.json();
+
+
+            shopId = shop.sid;
+
+
+            console.log("Owner ID =", ownerId);
+
+            console.log("Shop ID =", shopId);
+
+
+            // Now load products
+
+            loadProducts();
+
+        }
+
+
+        // LOAD PRODUCTS
+
+        async function loadProducts() {
+
+            const response = await fetch(
+                `http://localhost:8080/getproducts/${ownerId}`
+            );
+
+
+            const products =
+                await response.json();
+
+
+            const productList =
+                document.getElementById("productList");
+
+
+            productList.innerHTML = "";
+
+
+            products.forEach(product => {
+
+                const div =
+                    document.createElement("div");
+
+
+                // CUSTOMER SELECTED QUANTITY
+
+                let quantity = 0;
+
+
+                div.innerHTML = `
+
+                    <h3>
+                        ${product.name}
+                    </h3>
+
+                    <p>
+                        Price: ₹${product.price}
+                    </p>
+
+                    <p>
+                        Stock: ${product.quantity}
+                    </p>
+
+                    <button class="minus">
+                        -
+                    </button>
+
+                    <span class="quantity">
+                        0
+                    </span>
+
+                    <button class="plus">
+                        +
+                    </button>
+
+                    <button class="cart">
+                        Add to Cart
+                    </button>
+
+                    <hr>
+
+                `;
+
+
+                const minusButton =
+                    div.querySelector(".minus");
+
+
+                const plusButton =
+                    div.querySelector(".plus");
+
+
+                const quantityText =
+                    div.querySelector(".quantity");
+
+
+                const cartButton =
+                    div.querySelector(".cart");
+
+
+                // PLUS
+
+                plusButton.onclick = function() {
+
+                    if (product.quantity === 0) {
+
+                        alert("Out of stock");
+
+                        return;
+                    }
+
+
+                    if (quantity < product.quantity) {
+
+                        quantity++;
+
+                        quantityText.textContent =
+                            quantity;
+
+                    }
+
+                    else {
+
+                        alert("Stock limit reached");
+
+                    }
+
+                };
+
+
+                // MINUS
+
+                minusButton.onclick = function() {
+
+                    if (quantity > 0) {
+
+                        quantity--;
+
+                    }
+
+                    quantityText.textContent =
+                        quantity;
+
+                };
+
+
+                // ADD TO CART
+
+                cartButton.onclick = function() {
+
+                    if (quantity === 0) {
+
+                        alert("Select quantity");
+
+                        return;
+                    }
+
+
+                    if (quantity > product.quantity) {
+
+                        alert("Not enough stock");
+
+                        return;
+                    }
+
+
+                    const item = {
+
+                        product_id:
+                            product.product_id,
+
+                        name:
+                            product.name,
+
+                        price:
+                            product.price,
+
+                        quantity:
+                            quantity,
+
+                        subtotal:
+                            product.price * quantity
+
+                    };
+
+
+                    cart.push(item);
+
+
+                    displayCart();
+
+
+                    alert(
+                        product.name +
+                        " added to cart"
+                    );
+
+
+                    console.log(cart);
+
+
+                    // RESET SELECTED QUANTITY
+
+                    quantity = 0;
+
+                    quantityText.textContent =
+                        quantity;
+
+                };
+
+
+                productList.appendChild(div);
+
+            });
+
+        }
+
+
+        // DISPLAY CART
+
+        function displayCart() {
+
+            const cartList =
+                document.getElementById("cartList");
+
+
+            const cartTotal =
+                document.getElementById("cartTotal");
+
+
+            cartList.innerHTML = "";
+
+
+            let total = 0;
+
+
+            cart.forEach(item => {
+
+                const div =
+                    document.createElement("div");
+
+
+                div.innerHTML = `
+
+                    <p>
+
+                        ${item.name}
+                        × ${item.quantity}
+                        = ₹${item.subtotal}
+
+                    </p>
+
+                `;
+
+
+                cartList.appendChild(div);
+
+
+                total =
+                    total + item.subtotal;
+
+            });
+
+
+            cartTotal.textContent =
+                "Total: ₹" + total;
+
+        }
+
+
+        // SHOW INVOICE
+
+        function showInvoice() {
+
+            if (cart.length === 0) {
+
+                alert("Cart is empty");
+
+                return;
+            }
+
+
+            const invoiceItems =
+                document.getElementById(
+                    "invoiceItems"
+                );
+
+
+            const invoiceTotal =
+                document.getElementById(
+                    "invoiceTotal"
+                );
+
+
+            invoiceItems.innerHTML = "";
+
+
+            let total = 0;
+
+
+            cart.forEach(item => {
+
+                const div =
+                    document.createElement("div");
+
+
+                div.innerHTML = `
+
+                    <p>
+
+                        ${item.name}
+                        × ${item.quantity}
+                        = ₹${item.subtotal}
+
+                    </p>
+
+                `;
+
+
+                invoiceItems.appendChild(div);
+
+
+                total =
+                    total + item.subtotal;
+
+            });
+
+
+            invoiceTotal.textContent =
+                "Total: ₹" + total;
+
+
+            document.getElementById(
+                "invoicePopup"
+            ).style.display = "block";
+
+        }
+
+
+        // CLOSE INVOICE
+
+        function closeInvoice() {
+
+            document.getElementById(
+                "invoicePopup"
+            ).style.display = "none";
+
+        }
+
+
+        // SEND EMAIL
+
+        async function sendEmail() {
+
+    const customerId =
+        new URLSearchParams(
+            window.location.search
+        ).get("customerId");
+
+
+    if (!customerId) {
+
+        alert("Customer ID not found");
+
+        return;
+    }
+
+
+    const invoiceData = {
+
+        customerId: Number(customerId),
+
+        items: cart.map(item => {
+
+            return {
+
+                name: item.name,
+
+                price: item.price,
+
+                quantity: item.quantity,
+
+                subtotal: item.subtotal
+
+            };
+
+        })
+
+    };
+
+
+    const response =
+        await fetch(
+            "http://localhost:8080/sendinvoice",
+            {
+
+                method: "POST",
+
+                headers: {
+
+                    "Content-Type":
+                        "application/json"
+
+                },
+
+                body:
+                    JSON.stringify(invoiceData)
+
+            }
+        );
+
+
+    if (response.ok) {
+
+        alert("Invoice sent successfully!");
+
+    }
+
+    else {
+
+        alert("Failed to send invoice!");
+
+    }
+
+}
+
+
+        // FINAL PLACE ORDER
+
+        async function placeOrder() {
+
+            const customerId =
+                new URLSearchParams(
+                    window.location.search
+                ).get("customerId");
+
+
+            if (!customerId) {
+
+                alert("Customer ID not found");
+
+                return;
+            }
+
+
+            if (!shopId) {
+
+                alert("Shop ID not found");
+
+                return;
+            }
+
+
+            const purchasedItems =
+                cart.map(item => {
+
+                    return {
+
+                        customer: {
+
+                            customerId:
+                                Number(customerId)
+
+                        },
+
+
+                        shop: {
+
+                            sid:
+                                shopId
+
+                        },
+
+
+                        product: {
+
+                            product_id:
+                                item.product_id
+
+                        },
+
+
+                        quantity:
+                            item.quantity,
+
+
+                        price:
+                            item.price,
+
+
+                        subtotal:
+                            item.subtotal
+
+                    };
+
+                });
+
+
+            console.log(
+                "Sending:",
+                purchasedItems
+            );
+
+
+            const response =
+                await fetch(
+                    "http://localhost:8080/addpruchaseditems",
+                    {
+
+                        method: "POST",
+
+                        headers: {
+
+                            "Content-Type":
+                                "application/json"
+
+                        },
+
+                        body:
+                            JSON.stringify(
+                                purchasedItems
+                            )
+
+                    }
+                );
+
+if (response.ok) {
+
+    // REDUCE STOCK
+
+    for (const item of cart) {
+
+        await fetch(
+            `http://localhost:8080/reducequantity?product_id=${item.product_id}&value=${item.quantity}`,
+            {
+                method: "POST"
+            }
+        );
+
+    }
+
+
+    alert(
+        "Order placed successfully!"
+    );
+
+
+    // CLEAR CART
+
+    cart = [];
+
+
+    // CLOSE INVOICE
+
+    document.getElementById(
+        "invoicePopup"
+    ).style.display = "none";
+
+
+    // GO BACK TO CUSTOMER MANAGEMENT
+
+    window.location.href =
+        "customermanagement.html";
+
+}
+
+            else {
+
+                alert("Order failed!");
+
+            }
+
+        }
+
+
+        // START
+
+        loadShop();
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Product Management</title>
+
+    <style>
+
+        .product {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .quantityControl {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        #priceBox {
+            display: none;
+
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+
+            width: 300px;
+            padding: 25px;
+
+            background: white;
+            border: 1px solid black;
+            border-radius: 10px;
+
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+
+            text-align: center;
+        }
+        #deleteBox {
+    display: none;
+
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    width: 300px;
+    padding: 25px;
+
+    background: white;
+    border: 1px solid black;
+    border-radius: 10px;
+
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+
+    text-align: center;
+}
+#addProductBox {
+    display: none;
+
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    width: 300px;
+    padding: 25px;
+
+    background: white;
+    border: 1px solid black;
+    border-radius: 10px;
+
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+
+    text-align: center;
+}
+
+    </style>
+</head>
+
+<body>
+
+    <h1>Product Management</h1>
+    <button onclick="openAddProductBox()">
+    Add New Product
+</button>
+
+<br><br>
+
+    <div id="productList"></div>
+
+
+    <!-- Change Price Popup -->
+
+    <div id="priceBox">
+
+        <h2>Change Price</h2>
+
+        <p>Enter the new price:</p>
+
+        <input
+            type="number"
+            id="newPrice"
+            step="0.01"
+            min="0"
+        >
+
+        <br><br>
+
+        <button onclick="updatePrice()">
+            Update
+        </button>
+
+        <button onclick="closePriceBox()">
+            Close
+        </button>
+
+    </div><div id="deleteBox">
+
+    <h2>Delete Product</h2>
+
+    <p>Sure you want to delete this product?</p>
+
+    <button onclick="deleteProduct()">
+        Delete
+    </button>
+
+    <button onclick="closeDeleteBox()">
+        Cancel
+    </button>
+
+</div>
+<div id="addProductBox">
+
+    <h2>Add New Product</h2>
+
+    <label>Product Name:</label>
+    <input type="text" id="productName">
+
+    <br><br>
+
+    <label>Quantity:</label>
+    <input type="number" id="productQuantity" min="0">
+
+    <br><br>
+
+    <label>Price:</label>
+    <input type="number" id="productPrice" min="0" step="0.01">
+
+    <br><br>
+
+    <button onclick="addProduct()">
+        Add
+    </button>
+
+    <button onclick="closeAddProductBox()">
+        Cancel
+    </button>
+
+</div>
+
+
+    <script>
+
+        let selectedProductId;
+
+
+        async function loadProducts() {
+
+            const ownerId = localStorage.getItem("ownerId");
+
+            const response = await fetch(
+                `http://localhost:8080/getproducts/${ownerId}`
+            );
+
+            const products = await response.json();
+
+            const productList =
+                document.getElementById("productList");
+
+            productList.innerHTML = "";
+
+
+            products.forEach(product => {
+
+                productList.innerHTML += `
+
+                    <div class="product">
+
+                        <span>
+                            ${product.name}
+                        </span>
+
+                        <span>
+                            ₹${product.price}
+                        </span>
+
+                        <span>
+                            Quantity: ${product.quantity}
+                        </span>
+
+                        <div class="quantityControl">
+
+                            <input
+                                type="number"
+                                value="1"
+                                min="1"
+                                id="qty-${product.product_id}"
+                            >
+
+                            <button
+                                onclick="addStock(${product.product_id})">
+                                +
+                            </button>
+
+                            <button
+                                onclick="openPriceBox(${product.product_id})">
+                                Change Price
+                            </button>
+
+                        </div>
+
+                       <button onclick="confirmDelete(${product.product_id})">
+    🗑️
+</button>
+
+                    </div>
+
+                `;
+            });
+        }
+
+
+        async function addStock(productId) {
+
+            const value =
+                document.getElementById(
+                    `qty-${productId}`
+                ).value;
+
+            await fetch(
+                `http://localhost:8080/updatequantity?product_id=${productId}&value=${value}`,
+                {
+                    method: "POST"
+                }
+            );
+
+            loadProducts();
+        }
+
+
+        function openPriceBox(productId) {
+
+            selectedProductId = productId;
+
+            document.getElementById("priceBox").style.display =
+                "block";
+        }
+
+
+        function closePriceBox() {
+
+            document.getElementById("priceBox").style.display =
+                "none";
+
+        }
+
+
+        async function updatePrice() {
+
+            const price =
+                document.getElementById("newPrice").value;
+
+            await fetch(
+                `http://localhost:8080/updateprice?id=${selectedProductId}&price=${price}`,
+                {
+                    method: "POST"
+                }
+            );
+
+            closePriceBox();
+
+            loadProducts();
+        }
+        function confirmDelete(productId) {
+
+    selectedProductId = productId;
+
+    document.getElementById("deleteBox").style.display =
+        "block";
+}async function deleteProduct() {
+
+    await fetch(
+        `http://localhost:8080/deleteproduct/${selectedProductId}`,
+        {
+            method: "GET"
+        }
+    );
+
+    closeDeleteBox();
+
+    loadProducts();
+}
+
+
+function closeDeleteBox() {
+
+    document.getElementById("deleteBox").style.display =
+        "none";
+}function openAddProductBox() {
+
+    document.getElementById("addProductBox").style.display =
+        "block";
+}
+
+
+function closeAddProductBox() {
+
+    document.getElementById("addProductBox").style.display =
+        "none";
+}async function addProduct() {
+
+    const ownerId = localStorage.getItem("ownerId");
+
+    const name =
+        document.getElementById("productName").value;
+
+    const quantity =
+        document.getElementById("productQuantity").value;
+
+    const price =
+        document.getElementById("productPrice").value;
+
+
+    const product = {
+
+        name: name,
+
+        quantity: quantity,
+
+        price: price,
+
+        owner: {
+            owner_id: ownerId
+        }
+
+    };
+
+
+    await fetch(
+        "http://localhost:8080/addproduct",
+        {
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify(product)
+        }
+    );
+
+
+    closeAddProductBox();
+
+    loadProducts();
+}
+
+
+        window.onload = loadProducts;
+
+    </script>
+
+</body>
+
+</html>
